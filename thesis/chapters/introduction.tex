@@ -1,0 +1,39 @@
+
+Deep neural networks (DNNs) have achieved remarkable success across domains such as computer vision,
+natural language processing, and healthcare. When deploying such models in critical applications 
+regarding safety, such as autonomous driving, medical diagnosis, or financial risk assessment,
+quantifying model uncertainty becomes essential. Overconfident predictions on noisy or
+out-of-distribution inputs can lead to disastrous outcomes and undermine
+trust in machine learning systems \citep{pereira2020challenges, valentin2024certification}.
+
+\vspace{0.15cm}
+In predictive modeling, uncertainty arises from two main sources: aleatoric uncertainty,
+which is inherent noise in the data (e.g., sensor noise or label ambiguity) and epistemic uncertainty,
+which stems from limited data, incomplete knowledge, or insufficient model capacity. Unlike aleatoric
+uncertainty, epistemic uncertainty can be reduced by collecting more observations or employing a more
+appropriate model architecture that better captures the underlying function
+\citep{hullermeier2021aleatoric}. This work focuses on the quantification of epistemic uncertainty,
+as it signals when models operate beyond their knowledge boundaries.
+
+\vspace{0.15cm}
+We evaluate two practical approximation methods, Monte Carlo Dropout (MC-Dropout) and Stochastic Weight
+Averaging Gaussian (SWAG). MC‑Dropout offers a lightweight approach by retaining dropout during inference,
+effectively simulating Bayesian sampling through multiple stochastic forward passes without altering the
+models architecture \citep{gal2016mcdropout}. SWAG constructs a Gaussian posterior over the model weights
+by capturing stochastic gradient descent (SGD) trajectory moments during training, offering richer
+uncertainty representations with improved robustness to distribution shifts \citep{maddox2019swag}.
+
+\vspace{0.15cm}
+After presenting these methods, their performance will be compared within a unified experimental framework.
+Both MC‑Dropout and SWAG are applied to synthetic datasets, where true uncertainty is known,
+and also to real‑world data (the boston housing dataset with ethical preprocessing). The evaluation metrics
+include predictive accuracy (RMSE), calibration quality (NLL, PICP), and out-of-distribution reliability.
+
+\vspace{0.15cm}
+The work is structured as follows: Section \ref{related_work} reviews prior work on uncertainty
+quantification methods and Bayesian neural models,
+Section \ref{methodology} details the MC‑Dropout and SWAG approaches,
+but also explains the underlying mechanisms and prior knowledge needed to understand them,
+Section \ref{experiments} presents comparative evaluations,
+Section \ref{discussion} analyzes trade-offs and future extensions and
+Section \ref{conclusion} summarizes key findings and their implications.

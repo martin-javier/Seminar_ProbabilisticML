@@ -1,0 +1,26 @@
+
+Through rigorous evaluation across synthetic and real-world datasets, this work has illustrated a
+fundamental trade-off in uncertainty estimation quality between MC-Dropout and SWAG. The systematic
+comparison reveals distinct characteristics that guide practical method selection.
+
+\vspace{0.15cm}
+Our experiments demonstrate that both methods effectively capture predictive uncertainty within their
+training distribution. In synthetic tasks (Figures \ref{fig:regression}, \ref{fig:classification}),
+they successfully identify out-of-distribution regions while maintaining accurate in-domain predictions.
+SWAG produced smoother uncertainty estimates in both regression and classification tasks, while MC-Dropout
+yielded noisier predictions. In the regression task specifically, MC-Dropout generated more conservative
+uncertainty intervals.
+
+When applied to the Boston Housing dataset (Section \ref{exp:real-world_data}), critical differences
+emerged. SWAG produced better-calibrated uncertainty estimates, achieving near-ideal prediction interval
+coverage (Table \ref{tab:bh_metrics}) and appropriately increasing uncertainty under distributional changes
+(Table \ref{tab:ood_results}). MC-Dropout showed undercoverage and concerning overconfidence in OOD
+scenarios. SWAG's uncertainty distributions showed greater diversity and stronger error correlation
+(Figure \ref{fig:bh_uncertainty_comp2x2}), while providing more reliable confidence intervals.
+
+\vspace{0.15cm}
+Ultimately, this work demonstrates that Bayesian approximations don't need to sacrifice practical utility,
+as both methods provide valuable uncertainty estimates, with SWAG offering superior calibration at
+moderately higher computational overhead. As neural networks increasingly support critical decision-making,
+selecting appropriate uncertainty quantification methods becomes essential for developing trustworthy AI
+systems.

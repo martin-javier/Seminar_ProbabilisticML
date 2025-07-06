@@ -1,0 +1,32 @@
+
+This work systematically compares MC-Dropout and SWAG for uncertainty quantification, revealing a
+fundamental trade-off between computational efficiency and and the quality of uncertainty estimates.
+MC-Dropout's advantages lie in computational efficiency, generating uncertainty estimates through simple
+stochastic forward passes. It however shows limitations including undercoverage and overconfidence under
+distribution shift. SWAG addresses these issues through SGD-based weight-space exploration, yielding
+better-calibrated uncertainties with improved responsiveness to distributional changes, but requiring
+extended training and increased memory overhead.
+
+\vspace{0.15cm}
+Given these differences, our findings suggest practical recommendations for choosing between MC-Dropout and
+SWAG. MC-Dropout suits applications prioritizing speed and simplicity where uncertainties play a secondary
+role, particularly in stable environments. Its deficient OOD performance (Table \ref{tab:ood_results})
+makes it unsuitable for safety-critical systems. SWAG proves preferable when the reliability of uncertainty
+is central to decision making, especially where training budget permits extended exploration and deployment
+contexts involve potential distribution shifts.
+
+\vspace{0.15cm}
+Looking ahead, both methods present opportunities for improvement. Extensions of MC-Dropout could reduce
+its overconfidence through techniques such as Concrete Dropout \citep{gal2017concretedropout}, which learns
+layer-specific retention probabilities to better calibrate uncertainty. SWAG can be further improved in
+terms of expressiveness and efficiency. MultiSWAG \citep{onal2024multiswag}, for instance, ensemble the
+several independently trained SWAG models to approximate multimodal posteriors, while SWALP
+\citep{yang2019swalp} enables low-precision inference, reducing computational cost without degrading
+performance. For applications where multimodality capture is essential, Deep Ensembles
+\citep{lakshminarayanan2017preduncw/deepensembles} remain superior despite high computational costs,
+with MultiSWAG offering a promising balance between efficiency and robustness.
+
+\vspace{0.15cm}
+The selection of an uncertainty quantification method should ultimately be guided by the specific
+requirements of the target application. MC-Dropout is well suited for lightweight and scalable solutions,
+SWAG for reliable calibration, and ensemble variants where resources permit robust uncertainty modeling.

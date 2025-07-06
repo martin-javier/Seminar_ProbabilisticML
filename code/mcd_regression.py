@@ -435,3 +435,174 @@ plt.tight_layout(rect=[0, 0, 1, 0.99])
 # Auto-save the plot
 plt.savefig("plots/mcd_reg_tuned.png", dpi=300, bbox_inches='tight', facecolor='white')
 plt.show()
+
+
+
+
+# The same process without tuning but comparing results estimated with different dropout rates
+
+import numpy as np
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+
+np.random.seed(7)
+torch.manual_seed(7)
+
+##########################################################################################
+#
+# 1. Dataset
+#
+##########################################################################################
+
+N = 1000
+x = np.linspace(-5, 5, N)
+y = np.sin(x) + 0.3 * np.random.randn(N)
+
+x_train, _, y_train, _ = train_test_split(x, y, test_size=0.2, random_state=7)
+x_test = np.linspace(-8, 8, 100)
+y_test = np.sin(x_test)
+
+x_train_tensor = torch.tensor(x_train, dtype=torch.float32).unsqueeze(1)
+y_train_tensor = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1)
+x_test_tensor = torch.tensor(x_test, dtype=torch.float32).unsqueeze(1)
+
+
+##########################################################################################
+#
+# 2. Model
+#
+##########################################################################################
+
+class MLP(nn.Module):
+    def __init__(self, n_in, n_hidden1, n_hidden2, n_out, dropout_rate=0.2):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(n_in, n_hidden1),
+            nn.ReLU(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(n_hidden1, n_hidden2),
+            nn.ReLU(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(n_hidden2, n_out),
+        )
+    def forward(self, x):
+        return self.net(x)
+
+
+##########################################################################################
+#
+# 3. Training and Evaluation Function
+#
+##########################################################################################
+
+def train_and_evaluate(dropout_rate):
+    # Hyperparameters
+    epochs = 1000
+    lr = 1e-3
+    wd = 1e-5
+    batch = 20
+    mc_samples = 200
+    
+    # Model setup
+    model = MLP(1, 32, 32, 1, dropout_rate=dropout_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
+    criterion = torch.nn.MSELoss()
+    train_loader = DataLoader(TensorDataset(x_train_tensor, y_train_tensor), 
+                             batch_size=batch, shuffle=True)
+    
+    # Training
+    model.train()
+    for epoch in range(epochs):
+        for xb, yb in train_loader:
+            optimizer.zero_grad()
+            loss = criterion(model(xb), yb)
+            loss.backward()
+            optimizer.step()
+        if (epoch + 1) % 200 == 0:
+            print(f"[Dropout {dropout_rate}] Epoch {epoch+1}/{epochs} | loss: {loss.item():.4f}")
+    
+    # MC-Dropout Inference
+    model.train()
+    with torch.no_grad():
+        preds = [model(x_test_tensor).cpu().numpy() for _ in range(mc_samples)]
+    preds = np.stack(preds, axis=0)
+    mean_preds = preds.mean(axis=0).flatten()
+    std_preds = preds.std(axis=0).flatten()
+    
+    return mean_preds, std_preds
+
+
+##########################################################################################
+#
+# 4. Run experiments for different dropout rates
+#
+##########################################################################################
+
+dropout_rates = [0.1, 0.3, 0.5, 0.7]
+results = {rate: train_and_evaluate(rate) for rate in dropout_rates}
+
+
+##########################################################################################
+#
+# 5. Plotting
+#
+##########################################################################################
+
+plt.style.use('default')
+plt.rcParams.update({
+    'axes.titlesize': 24,
+    'axes.labelsize': 16,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 14
+})
+fig, axes = plt.subplots(2, 2, figsize=(19.2, 10.8), sharex=True, sharey=True)
+axes = axes.flatten()
+
+for ax, dropout_rate in zip(axes, dropout_rates):
+    mean_preds, std_preds = results[dropout_rate]
+    
+    # True function
+    ax.plot(x_test, np.sin(x_test), 'k--', lw=2, label='True function')
+    
+    # Mean prediction
+    ax.plot(x_test, mean_preds, 'r-', lw=2, label='Mean prediction')
+    
+    # Uncertainty band
+    ax.fill_between(x_test, 
+                   mean_preds - 2*std_preds, 
+                   mean_preds + 2*std_preds, 
+                   color='crimson', alpha=0.3, label='±2 std')
+    
+    # Training region markers
+    ax.axvline(-5, color='gray', ls=':', lw=1.5)
+    ax.axvline(5, color='gray', ls=':', lw=1.5)
+    
+    # Plot settings
+    ax.grid(alpha=0.3)
+    ax.set_xlim(-8, 8)
+    ax.set_ylim(-3, 3)
+    ax.set_title(f'Dropout Rate: {dropout_rate}')
+    ax.set_ylabel('y', fontsize=12)
+
+# Common elements
+for ax in axes[2:]:
+    ax.set_xlabel('x', fontsize=12)
+
+fig.suptitle('MC-Dropout Uncertainty Estimation Comparison', fontsize=28, y=0.98)
+
+# Unified legend
+handles = [
+    Line2D([0], [0], color='black', ls='--', lw=2, label='True function'),
+    Line2D([0], [0], color='red', lw=2, label='Mean prediction'),
+    Line2D([0], [0], color='crimson', lw=8, alpha=0.3, label='Uncertainty (±2 std)')
+]
+fig.legend(handles=handles, loc='lower center', ncol=3, frameon=True)
+
+plt.tight_layout(rect=[0, 0.02, 1, 0.99])
+plt.savefig("plots/mcd_reg_comparison_2x2.png", dpi=300, bbox_inches='tight', facecolor='white')
+plt.show()

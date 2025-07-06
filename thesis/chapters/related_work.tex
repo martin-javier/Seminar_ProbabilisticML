@@ -1,0 +1,44 @@
+
+A diverse set of techniques has been proposed for quantifying uncertainty in neural networks, which can
+broadly be categorized into variational approaches, ensemble methods and approximate inference techniques.
+
+\paragraph{Variational Approaches}
+Monte Carlo Dropout (MC-Dropout), introduced by \citet{gal2016mcdropout}, implements variational
+inference by retaining dropout at test time to obtain uncertainty estimates. While computationally
+efficient, subsequent research has identified limitations. MC-Dropout can underestimate uncertainty,
+particularly in regions with little to no data \citep{osband2016}, which aligns with our observations of
+undercoverage and overconfidence in Section \ref{exp:real-world_data}. \citet{verdoja2021behaviormcdropout}
+demonstrate that model architecture, training and tuning choices heavily influence the estimated
+uncertainty. Furthermore, \citet{sicking2020characteristicsmcdropout} observe that MC-Dropout may produce
+non-Gaussian uncertainty distributions in wide networks.
+
+Another noteworthy approach is Bayes by Backprop \citep{blundell2015bayesbybackprop}. This method
+places a distribution (typically Gaussian) over model weights, learned via variational inference.
+The resulting weight uncertainty can then be used to generate predictive uncertainty estimates
+through weight sampling.
+
+\paragraph{Ensemble Methods}
+Deep Ensembles \citep{lakshminarayanan2017preduncw/deepensembles} combine predictions from multiple
+independently trained models and consistently outperform MC-Dropout, especially under dataset shifts,
+as shown by \citet{fort2020deepensembles}. They require high computational and memory costs, which makes
+them less practical for large-scale applications.
+
+Stochastic Weight Averaging Gaussian (SWAG), introduced by \citet{maddox2019swag}, constructs a Gaussian
+posterior over weights based on Stochastic Gradient Descent (SGD) trajectory statistics. As validated in
+our experiments (Section \ref{exp:real-world_data}), SWAG demonstrates improved calibration and robustness
+compared to MC-Dropout while maintaining reasonable computational overhead. The Extension MultiSWAG
+\citep{onal2024multiswag} bridges the gap between SWAG and full ensembles.
+
+\paragraph{Approximate Inference}
+Methods like Laplace approximations, expectation propagation perform local Gaussian posterior approximation
+around a maximum a posteriori (MAP) estimation. These methods yield competitiveperformance in both
+efficiency and uncertainty quality \citep[see, e.g.,][]{ritter2018kfaclaplace}. Linearized Laplace
+\citep{antoran2022linearizedlaplace}, and more efficient variants such as Laplace Redux
+\citep{daxberger2022laplaceredux} offer scalable posterior estimation with good calibration and
+performance. These techniques offer a middle ground between simplicity and robustness.
+
+\vspace{0.4cm}
+This work focuses on MC-Dropout and SWAG, which cover both ends of the trade-off spectrum discussed in
+prior work. MC-Dropout for its ease-of-use and efficiency, and SWAG for its richer posterior structure
+and empirical strength.
+
