@@ -84,8 +84,7 @@ A key motivation for dropout is to prevent co-adaptation. In standard neural net
 neurons may develop complex interdependencies that cause them to function only in specific combinations.
 This means if one neuron fails (e.g., due to a noisy input), the entire model may break down,
 leading to poor generalization and overfitting \citep{hinton2012}.
-Dropout improves robustness by forcing neurons to
-learn useful features independently.
+Dropout improves robustness by forcing neurons to learn useful features independently.
 
 This process effectively trains an ensemble of exponentially many "thinned" subnetworks that share
 weights, which prevents complex co-adaptation of features and improves generalization \citep{srivastava2014dropout}.
@@ -93,7 +92,7 @@ weights, which prevents complex co-adaptation of features and improves generaliz
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.65\linewidth]{figures/fig_dropout.png}
-    \caption{Visualization of the dropout mechanism: (a) Standard neural network with two hidden layers; (b) Thinned network after applying dropout masks. Crossed neurons are temporarily deactivated during training.\\
+    \caption{Visualization of the dropout mechanism: (a) Standard neural network with two hidden layers, (b) Thinned network after applying dropout masks. Crossed neurons are temporarily deactivated during training.\\
     This figure was manually reillustrated with minor adjustments, the original version was published by \citet{srivastava2014dropout}}
     \label{fig:dropout-srivastava}
 \end{figure}

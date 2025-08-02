@@ -482,16 +482,19 @@ print("="*50 + "\n")
 mcd_colour = (0, 0, 1)          # blue for MC-Dropout
 swag_colour = (1, 0.5, 0)       # orange for SWAG
 
-# Set global font sizes for stand-alone plots
-plt.rcParams.update({
+# Set global font sizes for ALL stand-alone plots
+stand_alone_rc = {
     'axes.titlesize': 34,
     'axes.labelsize': 26,
     'xtick.labelsize': 22,
     'ytick.labelsize': 22,
     'legend.fontsize': 28
-})
+}
+plt.rcParams.update(stand_alone_rc)
 
-# Uncertainty Plot
+# ======================
+# 1. Uncertainty Intervals Plot (Stand-alone)
+# ======================
 plt.figure(figsize=(19.2, 10.8))
 plt.scatter(y_test, mc_mean, alpha=0.5, label='MC-Dropout', color=mcd_colour, s=100)
 plt.errorbar(y_test, mc_mean, yerr=1.96*mc_std, 
@@ -510,7 +513,9 @@ plt.tight_layout()
 plt.savefig('plots/bh_uncertainty_intervals.png', dpi=300, bbox_inches='tight', facecolor='white')
 plt.show()
 
-# Residual Plot
+# ======================
+# 2. Residual Plot (Stand-alone)
+# ======================
 plt.figure(figsize=(19.2, 10.8))
 plt.scatter(mc_mean, y_test - mc_mean, alpha=0.6, label='MC-Dropout', color=mcd_colour, s=100)
 plt.scatter(swag_mean, y_test - swag_mean, alpha=0.6, label='SWAG', color=swag_colour, s=100)
@@ -524,6 +529,96 @@ plt.tight_layout()
 plt.savefig('plots/bh_residuals.png', dpi=300, bbox_inches='tight', facecolor='white')
 plt.show()
 
+# ======================
+# 3. Uncertainty Distribution (Stand-alone)
+# ======================
+plt.figure(figsize=(19.2, 10.8))
+plt.hist(mc_std, bins=30, alpha=0.5, label='MC-Dropout', color=mcd_colour)
+plt.hist(swag_std, bins=30, alpha=0.5, label='SWAG', color=swag_colour)
+plt.xlabel("Prediction Standard Deviation")
+plt.ylabel("Frequency")
+plt.title("Uncertainty Distribution", pad=15)
+plt.legend()
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.savefig('plots/bh_uncertainty_distribution.png', dpi=300, bbox_inches='tight', facecolor='white')
+plt.show()
+
+# ======================
+# 4. Uncertainty vs Error (Stand-alone)
+# ======================
+plt.figure(figsize=(19.2, 10.8))
+plt.scatter(np.abs(y_test - mc_mean), mc_std, alpha=0.6, label='MC-Dropout', color=mcd_colour, s=100)
+plt.scatter(np.abs(y_test - swag_mean), swag_std, alpha=0.6, label='SWAG', color=swag_colour, s=100)
+plt.xlabel("Absolute Residual")
+plt.ylabel("Prediction Standard Deviation")
+plt.title("Uncertainty vs Error", pad=15)
+plt.legend()
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.savefig('plots/bh_uncertainty_vs_error.png', dpi=300, bbox_inches='tight', facecolor='white')
+plt.show()
+
+# ======================
+# 5. Calibration Plots (1x2 layout)
+# ======================
+def plot_calibration(mean: np.ndarray, 
+                     std: np.ndarray, 
+                     target: np.ndarray, 
+                     ax: plt.Axes, 
+                     label: str,
+                     color=None,
+                     show_ylabel=True):
+    """Plot calibration of predictions with uncertainty bands"""
+    sorted_idx = np.argsort(mean)
+    mean_sorted = mean[sorted_idx]
+    std_sorted = std[sorted_idx]
+    target_sorted = target[sorted_idx]
+    
+    # Use color if specified
+    if color:
+        ax.plot(mean_sorted, target_sorted, 'o', alpha=0.3, label=label, color=color, markersize=8)
+        ax.fill_between(mean_sorted, 
+                       mean_sorted - 1.96*std_sorted, 
+                       mean_sorted + 1.96*std_sorted, 
+                       alpha=0.2, color=color)
+    else:
+        ax.plot(mean_sorted, target_sorted, 'o', alpha=0.3, label=label, markersize=8)
+        ax.fill_between(mean_sorted, 
+                       mean_sorted - 1.96*std_sorted, 
+                       mean_sorted + 1.96*std_sorted, 
+                       alpha=0.2)
+    
+    ax.plot([mean.min(), mean.max()], [mean.min(), mean.max()], 'k--')
+    ax.set_xlabel("Predicted Mean")
+    if show_ylabel:
+        ax.set_ylabel("True Value")
+    ax.set_title(f"Calibration: {label}", pad=15)
+    ax.grid(alpha=0.3)
+    
+    ax.set_xlim(-2.2, 3.2)
+    ax.set_ylim(-3.25, 4.25)
+    
+    # Set tick label sizes
+    ax.tick_params(axis='both', which='major', labelsize=22)
+
+# Create 1x2 plot for calibration
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(19.2, 10.8))
+plt.rcParams.update(stand_alone_rc)  # Apply consistent styling
+
+# MC-Dropout Calibration
+plot_calibration(mc_mean, mc_std, y_test, ax1, "MC-Dropout", color=mcd_colour, show_ylabel=True)
+
+# SWAG Calibration
+plot_calibration(swag_mean, swag_std, y_test, ax2, "SWAG", color=swag_colour, show_ylabel=False)
+
+plt.tight_layout()
+plt.savefig('plots/bh_calibration_comparison.png', dpi=300, bbox_inches='tight', facecolor='white')
+plt.show()
+
+# ======================
+# 5. Uncertainty Comparision Plots (2x2 layout)
+# ======================
 # Global font sizes for the 2x2 plot
 plt.rcParams.update({
     'axes.titlesize': 24,
@@ -549,7 +644,6 @@ plt.grid(alpha=0.3)
 plt.subplot(222)
 plt.scatter(np.abs(y_test - mc_mean), mc_std, alpha=0.6, label='MC-Dropout', color=mcd_colour)
 plt.scatter(np.abs(y_test - swag_mean), swag_std, alpha=0.6, label='SWAG', color=swag_colour)
-plt.plot([0, max(np.abs(y_test - mc_mean))], [0, max(mc_std)], 'k--', alpha=0.5)
 plt.xlabel("Absolute Residual")
 plt.ylabel("Prediction Std")
 plt.title("Uncertainty vs Error", pad=10)
@@ -612,24 +706,24 @@ plt.show()
 ##########################################################################################
 
 # In-domain vs OOD comparison
-high_medinc_mask = X_test[:, 0] > 2.0  # Extreme values for MedInc
-print(f"Found {high_medinc_mask.sum()} OOD samples (High MedInc)")
+high_crim_mask = X_test[:, 0] > 2.0  # Extreme values for crime rate
+print(f"Found {high_crim_mask.sum()} natural OOD samples (High crime areas)")
 
-if high_medinc_mask.sum() > 0:
+if high_crim_mask.sum() > 0:
     # In-domain metrics
     id_mc_rmse = np.sqrt(mean_squared_error(y_test, mc_mean))
     id_mc_nll = nll(mc_mean, mc_std, y_test)
     id_swag_rmse = np.sqrt(mean_squared_error(y_test, swag_mean))
     id_swag_nll = nll(swag_mean, swag_std, y_test)
     
-    # OOD metrics
-    ood_mc_rmse = np.sqrt(mean_squared_error(y_test[high_medinc_mask], mc_mean[high_medinc_mask]))
-    ood_mc_nll = nll(mc_mean[high_medinc_mask], mc_std[high_medinc_mask], y_test[high_medinc_mask])
-    ood_swag_rmse = np.sqrt(mean_squared_error(y_test[high_medinc_mask], swag_mean[high_medinc_mask]))
-    ood_swag_nll = nll(swag_mean[high_medinc_mask], swag_std[high_medinc_mask], y_test[high_medinc_mask])
+    # OOD metrics for high-crime areas
+    ood_mc_rmse = np.sqrt(mean_squared_error(y_test[high_crim_mask], mc_mean[high_crim_mask]))
+    ood_mc_nll = nll(mc_mean[high_crim_mask], mc_std[high_crim_mask], y_test[high_crim_mask])
+    ood_swag_rmse = np.sqrt(mean_squared_error(y_test[high_crim_mask], swag_mean[high_crim_mask]))
+    ood_swag_nll = nll(swag_mean[high_crim_mask], swag_std[high_crim_mask], y_test[high_crim_mask])
     
     print("\n" + "="*50)
-    print("Natural OOD Analysis (High MedInc):")
+    print("Natural OOD Analysis (High Crime Areas):")
     print(f"MC-Dropout RMSE: ID {id_mc_rmse:.4f} vs OOD {ood_mc_rmse:.4f}")
     print(f"MC-Dropout NLL: ID {id_mc_nll:.4f} vs OOD {ood_mc_nll:.4f}")
     print(f"SWAG RMSE: ID {id_swag_rmse:.4f} vs OOD {ood_swag_rmse:.4f}")
@@ -638,9 +732,9 @@ if high_medinc_mask.sum() > 0:
 
 # Artificial OOD samples
 X_ood = X_test.copy()
-high_income_mask = X_ood[:, 0] > 1.5  # Above average income
-X_ood[high_income_mask, 0] *= 3.0  # Exaggerate high income
-X_ood[high_income_mask, 5] *= 0.3  # Reduce occupancy
+high_crim_mask_art = X_ood[:, 0] > 1.5 # Above average crime rate
+X_ood[high_crim_mask_art, 0] *= 3.0  # Triple crime rate
+X_ood[high_crim_mask_art, 5] *= 0.3  # Reduce room count
 
 # Evaluate on OOD samples
 test_tensor_ood = torch.tensor(X_ood, dtype=torch.float32).to(device)
@@ -695,7 +789,7 @@ plt.figure(figsize=(19.2, 10.8))
 # MC-Dropout OOD comparison
 plt.subplot(121)
 plt.hist(mc_std, bins=30, alpha=0.7, label='In-domain', color='grey')
-plt.hist(mc_std_ood, bins=30, alpha=0.5, label='OOD', color='orange')
+plt.hist(mc_std_ood, bins=30, alpha=0.5, label='Artificial OOD', color='orange')
 plt.xlabel("MC-Dropout Std", fontsize=20)
 plt.ylabel("Frequency", fontsize=20)
 plt.title("MC-Dropout Uncertainty: ID vs OOD", fontsize=32, pad=10)
@@ -703,20 +797,20 @@ plt.legend(fontsize=20)
 plt.xticks(fontsize=16)
 plt.yticks(fontsize=16)
 plt.xlim(0, 1)
-plt.ylim(0, 21)
+plt.ylim(0, 31)
 plt.grid(alpha=0.3)
 
 # SWAG OOD comparison
 plt.subplot(122)
 plt.hist(swag_std, bins=30, alpha=0.7, label='In-domain', color='grey')
-plt.hist(swag_std_ood, bins=30, alpha=0.5, label='OOD', color='orange')
+plt.hist(swag_std_ood, bins=30, alpha=0.5, label='Artificial OOD', color='orange')
 plt.xlabel("SWAG Std", fontsize=20)
 plt.title("SWAG Uncertainty: ID vs OOD", fontsize=32, pad=10)
 plt.legend(fontsize=20)
 plt.xticks(fontsize=16)
 plt.yticks(fontsize=16)
 plt.xlim(0, 1)
-plt.ylim(0, 21)
+plt.ylim(0, 31)
 plt.grid(alpha=0.3)
 
 plt.tight_layout()

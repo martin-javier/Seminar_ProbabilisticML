@@ -30,9 +30,9 @@ predictions come from different thinned subnetworks, while for SWAG they derive 
 $\mathbf{w}^{(s)} \sim q_{\mathrm{SWAG}}$.
 
 SWAG's samples follow a certain structure, where connecting e.g. the maximum prediction at each test
-point will form a smooth curve. This is because these samples come from the same set of weights,
-i.e. the same model. MC-Dropout's more irregular dispersion reflects the random neuron deactivations
-from different dropout masks \citep{gal2016mcdropout}.
+point will form an almost smooth curve. This structural consistency arises because all samples derive from the
+shared Gaussian approximation of the weight posterior. MC-Dropout's more irregular dispersion reflects the random
+neuron deactivations from different dropout masks \citep{gal2016mcdropout}.
 
 \vspace{0.15cm}
 These observations align with theoretical expectations, MC-Dropout's sampling produces noisier but more
@@ -175,8 +175,7 @@ demonstrates more conservative and better-calibrated uncertainty estimates.
 
 \paragraph{Out-of-Distribution Analysis}
 To evaluate the robustness of uncertainty estimation under distribution shift, two types of
-out-of-distribution (OOD) scenarios are examined. Natural OOD samples with exceptionally high median
-income (\texttt{MedInc}) and artificially perturbed samples with amplified income and reduced occupancy.
+out-of-distribution (OOD) scenarios are examined. Natural OOD samples with exceptionally high crime rate (\texttt{crim}) and artificially perturbed samples with amplified crime rate and reduced number of rooms.
 Table~\ref{tab:ood_results} displays predictive accuracy (RMSE) and uncertainty calibration (NLL) across
 in-domain and OOD conditions.
 
@@ -196,7 +195,7 @@ Artificial OOD & 0.4283 & 0.7249 & 0.4094 & 0.3006 \\
 \label{tab:ood_results}
 \end{table}
 
-For natural OOD samples, MC-Dropout shows point-prediction accuracy with the RMSE decreasing from 0.4033 to
+For natural OOD samples, MC-Dropout shows better point-prediction accuracy with the RMSE decreasing from 0.4033 to
 0.2768, but exhibits a substantial NLL reduction (0.6814 to 0.2331). This divergence suggests potentially
 overconfident uncertainty estimates that fail to properly reflect distribution shift. In contrast, SWAG
 maintains stable predictive accuracy (RMSE: 0.3947 to 0.3838) while appropriately increasing NLL (0.2218

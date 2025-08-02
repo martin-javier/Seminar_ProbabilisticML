@@ -56,7 +56,7 @@ class MLP(nn.Module):
         return self.net(x)
 
 # Set hyperparameters
-epochs = 300  # epochs
+epochs = 1000  # epochs
 lr = 1e-2  # learning rate 
 wd = 1e-4  # weight decay
 batch = 32
@@ -304,14 +304,13 @@ best_params = random_search.best_params_
 ##########################################################################################
 
 # Set hyperparameters from tuning results
-epochs = 300
+epochs = 1000
 lr = best_params['lr']
 wd = best_params['optimizer__weight_decay']
 batch = best_params['batch_size']
 n_hidden1 = best_params['module__n_hidden1']
 n_hidden2 = best_params['module__n_hidden2']
 dropout_rate = best_params['module__dropout_rate']
-wd = 1e-4
 mc_samples = 200
 
 # Combine train and validation sets for final training
@@ -407,5 +406,5 @@ cbar2.ax.tick_params(labelsize=22)
 plt.tight_layout(rect=[0, 0, 1, 0.99])
 
 # Auto-save the plot
-plt.savefig("plots/mcd_cla_tuned.png", dpi=300, bbox_inches='tight', facecolor='white')
+plt.savefig("plots/mcd_cla_tuned2.png", dpi=300, bbox_inches='tight', facecolor='white')
 plt.show()

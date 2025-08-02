@@ -439,7 +439,7 @@ plt.show()
 
 
 
-# The same process without tuning but comparing results estimated with different dropout rates
+# The same process without tuning but comparing results estimated with different dropout rates and different mc-samples:
 
 import numpy as np
 import torch
@@ -605,4 +605,117 @@ fig.legend(handles=handles, loc='lower center', ncol=3, frameon=True)
 
 plt.tight_layout(rect=[0, 0.02, 1, 0.99])
 plt.savefig("plots/mcd_reg_comparison_2x2.png", dpi=300, bbox_inches='tight', facecolor='white')
+plt.show()
+
+
+##########################################################################################
+#
+# 6. Additional Experiment: Different No. of MC-Samples (fixed dropout rate=0.2)
+#
+##########################################################################################
+
+def train_fixed_dropout(dropout_rate=0.2):
+    """Train model with fixed dropout rate (returns model only)"""
+    # Hyperparameters
+    epochs = 1000
+    lr = 1e-3
+    wd = 1e-5
+    batch = 20
+    
+    # Model setup
+    model = MLP(1, 32, 32, 1, dropout_rate=dropout_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
+    criterion = torch.nn.MSELoss()
+    train_loader = DataLoader(TensorDataset(x_train_tensor, y_train_tensor), 
+                            batch_size=batch, shuffle=True)
+    
+    # Training
+    model.train()
+    for epoch in range(epochs):
+        for xb, yb in train_loader:
+            optimizer.zero_grad()
+            loss = criterion(model(xb), yb)
+            loss.backward()
+            optimizer.step()
+        if (epoch + 1) % 200 == 0:
+            print(f"[Fixed Dropout 0.2] Epoch {epoch+1}/{epochs} | loss: {loss.item():.4f}")
+    return model
+
+def mc_dropout_inference(model, mc_samples):
+    """Perform MC-Dropout inference with specified sample size"""
+    model.train()
+    with torch.no_grad():
+        preds = [model(x_test_tensor).cpu().numpy() for _ in range(mc_samples)]
+    preds = np.stack(preds, axis=0)
+    return preds.mean(axis=0).flatten(), preds.std(axis=0).flatten()
+
+# Train model once with fixed dropout
+fixed_dropout_model = train_fixed_dropout(dropout_rate=0.2)
+
+# Run experiments for different MC sample sizes
+mc_sample_sizes = [50, 100, 200, 500]
+mc_results = {}
+for sample_size in mc_sample_sizes:
+    mc_results[sample_size] = mc_dropout_inference(fixed_dropout_model, sample_size)
+
+
+##########################################################################################
+#
+# 7. Plotting for MC-Samples Comparison
+#
+##########################################################################################
+
+plt.style.use('default')
+plt.rcParams.update({
+    'axes.titlesize': 24,
+    'axes.labelsize': 16,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 14
+})
+fig, axes = plt.subplots(2, 2, figsize=(19.2, 10.8), sharex=True, sharey=True)
+axes = axes.flatten()
+
+for ax, sample_size in zip(axes, mc_sample_sizes):
+    mean_preds, std_preds = mc_results[sample_size]
+    
+    # True function
+    ax.plot(x_test, np.sin(x_test), 'k--', lw=2, label='True function')
+    
+    # Mean prediction
+    ax.plot(x_test, mean_preds, 'r-', lw=2, label='Mean prediction')
+    
+    # Uncertainty band
+    ax.fill_between(x_test, 
+                   mean_preds - 2*std_preds, 
+                   mean_preds + 2*std_preds, 
+                   color='crimson', alpha=0.3, label='±2 std')
+    
+    # Training region markers
+    ax.axvline(-5, color='gray', ls=':', lw=1.5)
+    ax.axvline(5, color='gray', ls=':', lw=1.5)
+    
+    # Plot settings
+    ax.grid(alpha=0.3)
+    ax.set_xlim(-8, 8)
+    ax.set_ylim(-3, 3)
+    ax.set_title(f'MC Samples: {sample_size}')
+    ax.set_ylabel('y', fontsize=12)
+
+# Common elements
+for ax in axes[2:]:
+    ax.set_xlabel('x', fontsize=12)
+
+fig.suptitle('MC-Dropout Uncertainty Estimation with Varying MC Samples', fontsize=28, y=0.98)
+
+# Unified legend
+handles = [
+    Line2D([0], [0], color='black', ls='--', lw=2, label='True function'),
+    Line2D([0], [0], color='red', lw=2, label='Mean prediction'),
+    Line2D([0], [0], color='crimson', lw=8, alpha=0.3, label='Uncertainty (±2 std)')
+]
+fig.legend(handles=handles, loc='lower center', ncol=3, frameon=True)
+
+plt.tight_layout(rect=[0, 0.02, 1, 0.99])
+plt.savefig("plots/mcd_reg_mc_samples_comparison_2x2.png", dpi=300, bbox_inches='tight', facecolor='white')
 plt.show()
